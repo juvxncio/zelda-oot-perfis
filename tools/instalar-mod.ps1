@@ -5,7 +5,7 @@
 #
 # Ao instalar, na ordem: confere que o emulador esta fechado, faz o backup dos saves
 # (tools\backup-saves.ps1, para se falhar), guarda uma copia do qt-config.ini, liga as
-# mensagens de debug do jogo no log (Debug_Emulated:Debug) e copia o subsdk9.
+# mensagens de debug do jogo no log (Debug_Emulated:Debug) e copia o subsdk9 e o patch .ips.
 # Ao remover: apaga so a pasta deste mod e volta o filtro de log que estava antes.
 #
 # (Mensagens sem acento de proposito: o PowerShell 5.1 le scripts sem BOM como ANSI.)
@@ -78,8 +78,9 @@ if ($Remover) {
 }
 
 $subsdk = Join-Path $repo 'dist\load\0400486024DEC000\zelda-oot-perfis\exefs\subsdk9'
-if (-not (Test-Path -LiteralPath $subsdk)) {
-    Write-Host "ERRO: compile antes (make dist). Nao achei: $subsdk" -ForegroundColor Red
+$ips = Join-Path $repo 'dist\load\0400486024DEC000\zelda-oot-perfis\exefs\E0F3CCFAF50065AE4EA01EB5AEB13B1A45DA3348.ips'
+if (-not (Test-Path -LiteralPath $subsdk) -or -not (Test-Path -LiteralPath $ips)) {
+    Write-Host "ERRO: compile antes (make dist). Nao achei: $subsdk ou $ips" -ForegroundColor Red
     exit 1
 }
 
@@ -104,4 +105,5 @@ Write-Host "Filtro de log: $filtroDiag (copia do original em $guardado)"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $pastaMod 'exefs') | Out-Null
 Copy-Item -LiteralPath $subsdk -Destination (Join-Path $pastaMod 'exefs\subsdk9') -Force
+Copy-Item -LiteralPath $ips -Destination (Join-Path $pastaMod 'exefs') -Force
 Write-Host "OK: mod instalado em $pastaMod" -ForegroundColor Green
