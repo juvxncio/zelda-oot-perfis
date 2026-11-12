@@ -13,7 +13,7 @@
 #include "tela.h"
 #include "textos.h"
 
-#define VERSAO "0.10.0-idiomas-teste"
+#define VERSAO "1.0.0"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);
