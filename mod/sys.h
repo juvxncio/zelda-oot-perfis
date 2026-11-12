@@ -45,4 +45,7 @@ void log_end(log_line_t *l);
 /* Atalho para uma linha só com texto. */
 void log_raw(const char *s);
 
+/* Milissegundos de um relógio monotônico (contador do sistema). */
+uint64_t sys_agora_ms(void);
+
 #endif

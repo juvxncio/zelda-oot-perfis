@@ -104,3 +104,14 @@ void log_raw(const char *s)
   log_str(&l, s);
   log_end(&l);
 }
+
+uint64_t sys_agora_ms(void)
+{
+  uint64_t t, f;
+  __asm__ volatile("mrs %0, cntpct_el0" : "=r"(t));
+  __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(f));
+  if (!f)
+    return 0;
+  /* (t / f) * 1000 + resto, sem estourar 64 bits */
+  return (t / f) * 1000u + ((t % f) * 1000u) / f;
+}
