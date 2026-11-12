@@ -58,10 +58,31 @@ Extraído do `.nup` com `tools/extrair-exefs.ps1` e analisado com `tools/analisa
 - Há um formato `%s:/%s` em `main+0x3d4e167`, provavelmente para montar
   "ponto de montagem + caminho".
 
+## Diagnóstico no jogo (2026-11-12, módulo 0.1.0-diag, Fritchii 5.7)
+
+O módulo carregou, interceptou as 14 funções e o jogo rodou normalmente. Sequência observada
+(segundos desde o início do emulador):
+
+| Tempo | Chamada | Observação |
+|---|---|---|
+| 71,7 | `MountRom content` | romfs do jogo montado como `content:` |
+| 76,0 | `MountSaveData save uid=...` | **save montado como `save:`**, usuário `35092526F2729A1E6560A99581586E25` |
+| 76,1 | `MountTemporaryStorage savt` | armazenamento temporário (`savt:`) |
+| 80,4–81,5 | `OpenFile save:/slot_NN/caption.sav` (leitura) | **lê `slot_00` a `slot_11`**: 12 slots; 06 a 11 dão `0x202` (não existe) |
+| 81,5–81,6 | `OpenFile save:/account.sav`, `save:/option.sav` (leitura) | |
+| 149,1 | `GetEntryType` + `OpenFile save:/account.sav` modo 6, `Commit save` | ao carregar o jogo: grava `account.sav` |
+| 149,9 | `OpenFile save:/slot_03/progress.sav` (leitura) | carrega o save mais recente |
+| 276,8–276,9 | `GetEntryType save:/slot_05`, `OpenFile .../progress.sav`, `option.sav`, `.../caption.sav` (modo 6), `Commit save` | **salvamento automático** no próximo slot do rodízio |
+
+- Modo 1 = leitura; modo 6 = escrita + permitir aumentar (`Write | AllowAppend`).
+- `0x202` = `ResultPathNotFound`.
+- Nenhuma chamada a `ReadDirectory`, `CreateFile`, `CreateDirectory` ou `DeleteFile`: o jogo
+  não lista a pasta nem olha datas. Ele acha o save mais recente **pelo conteúdo dos
+  `caption.sav`**, então redirecionar os caminhos basta para cada perfil ter o seu.
+- Antes de gravar, o jogo testa se a pasta do slot existe (`GetEntryType save:/slot_05`).
+
 ## Ainda falta descobrir
 
-- O formato exato dos caminhos em tempo de execução (ex.: `save:/slot_00/progress.sav`).
-  Como os nomes não estão no código, o caminho mais simples é um módulo de diagnóstico que só
-  registra no log cada caminho passado para as funções `nn::fs`, sem alterar nada.
-- Se o jogo acha o `slot_NN` mais recente listando a pasta (`OpenDirectory`/`ReadDirectory`)
-  ou por um índice interno (`QueryGetLatestSaveIndex`). O log do diagnóstico responde isso.
+- O que o jogo faz quando a pasta `slot_NN` não existe (save totalmente novo): deve criar com
+  `CreateDirectory` + `CreateFile`. Confirmar no primeiro teste de um perfil novo.
+- Para que servem `slot_06` a `slot_11` (talvez o modo Master Quest). O mod redireciona os 12.
