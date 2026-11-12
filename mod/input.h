@@ -33,6 +33,11 @@ typedef void (*input_botoes_fn)(uint32_t apertados);
  * Devolve quantas foram interceptadas. */
 int input_install(uintptr_t main_base, input_combo_fn on_combo, input_botoes_fn on_botoes);
 
+/* Chamada a cada leitura do controle pelo jogo (várias vezes por quadro), na thread que leu.
+ * Para tarefas periódicas curtas. */
+typedef void (*input_tick_fn)(void);
+void input_ao_ler(input_tick_fn fn);
+
 /* Enquanto bloqueado, o jogo não vê nenhum botão nem analógico. Ao desbloquear, continua sem
  * ver nada até todos os botões serem soltos (o A que confirmou não chega ao jogo). */
 void input_bloquear_jogo(bool bloquear);

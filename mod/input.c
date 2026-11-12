@@ -38,6 +38,12 @@ static uint64_t segurados[N_ESTILOS];   /* botões do último estado lido, por e
 static bool visto[N_ESTILOS];           /* já anotou no log que este estilo tem botões */
 static input_combo_fn combo_cb;
 static input_botoes_fn botoes_cb;
+static input_tick_fn tick_cb;
+
+void input_ao_ler(input_tick_fn fn)
+{
+  __atomic_store_n(&tick_cb, fn, __ATOMIC_RELEASE);
+}
 
 static bool bloqueado;          /* o menu está aberto */
 static bool esperando_soltar;   /* menu fechado, mas ainda há botão segurado */
@@ -163,6 +169,9 @@ static void observar(int estilo, const void *out, int lidos, const uint32_t *id)
     int lidos = next_hid[estilo](out, count, id);                         \
     int validos = lidos < count ? lidos : count;                          \
     observar(estilo, out, validos, id);                                   \
+    input_tick_fn t_ = __atomic_load_n(&tick_cb, __ATOMIC_ACQUIRE);       \
+    if (t_)                                                               \
+      t_();                                                               \
     if (out && validos > 0 && esconder_do_jogo())                         \
       apagar(out, validos);                                               \
     return lidos;                                                         \
