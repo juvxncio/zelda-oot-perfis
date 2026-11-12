@@ -1,0 +1,11 @@
+/* Os ganchos em funções internas do main (build E0F3CCFA, 1.1.1). Fonte única: incluída por
+ * mod/ganchos.h (X-macro) e lida por tools/mkips.py, que gera o patch IPS32 do exefs.
+ *
+ *   GANCHO(nome, offset no main, instrução original nesse offset)
+ *
+ * A instrução original é copiada para o desvio na caverna, então não pode depender do PC
+ * (adr/adrp/b/bl/cbz/tbz/ldr literal): o mkips.py recusa. A ordem define o índice do gancho
+ * e não deve mudar sem regerar o patch. */
+
+/* UISystemOptionScreen, vt+0x2f0: cria as linhas da tela de Opções (this, heap). */
+GANCHO(OPCOES_CRIAR, 0x34011c0, 0xd503237f)

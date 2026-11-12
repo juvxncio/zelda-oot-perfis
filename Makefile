@@ -1,7 +1,7 @@
 # zelda-oot-perfis: o módulo subsdk9 do mod.
 #
 #   make          compila build/subsdk9
-#   make dist     monta dist/load/0400486024DEC000/zelda-oot-perfis/exefs/subsdk9
+#   make dist     monta dist/load/0400486024DEC000/zelda-oot-perfis/exefs/ (subsdk9 e o patch .ips)
 #   make test     compila e roda no PC os testes da lógica de perfis e do menu (HOSTCC=...)
 #   make clean
 #
@@ -17,6 +17,11 @@ ELF2NSO      = $(DEVKITPRO)/tools/bin/elf2nso
 PROGRAM_ID   = 0400486024DEC000
 NOME         = zelda-oot-perfis
 SUBSDK       = subsdk9
+BUILD_ID     = E0F3CCFAF50065AE4EA01EB5AEB13B1A45DA3348
+IPS          = $(BUILD_ID).ips
+# Python 3 para tools/mkips.py. MAIN_BIN (opcional): o main achatado, para conferir os pontos.
+PYTHON      ?= python3
+MAIN_BIN    ?=
 
 SRCDIR       = mod
 LDSCRIPT     = $(SRCDIR)/modulo.ld
@@ -39,10 +44,10 @@ LDLIBS       = -lgcc
 
 CSRC         = $(wildcard $(SRCDIR)/*.c)
 SSRC         = $(wildcard $(SRCDIR)/*.S)
-HDRS         = $(wildcard $(SRCDIR)/*.h)
+HDRS         = $(wildcard $(SRCDIR)/*.h) $(SRCDIR)/ganchos.def
 OBJS         = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%.o,$(basename $(SSRC) $(CSRC)))
 
-all: $(BINDIR)/$(SUBSDK)
+all: $(BINDIR)/$(SUBSDK) $(BINDIR)/$(IPS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HDRS) | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -58,9 +63,14 @@ $(BINDIR)/modulo.elf: $(OBJS) $(LDSCRIPT) $(IMPORTS) | $(BINDIR)
 $(BINDIR)/$(SUBSDK): $(BINDIR)/modulo.elf
 	$(ELF2NSO) $< $@
 
-dist: $(BINDIR)/$(SUBSDK)
+# O patch dos ganchos (mod/ganchos.h): gerado da mesma tabela que o módulo usa.
+$(BINDIR)/$(IPS): tools/mkips.py $(SRCDIR)/ganchos.def $(SRCDIR)/ganchos.h | $(BINDIR)
+	$(PYTHON) -I tools/mkips.py $@ $(if $(MAIN_BIN),--conferir $(MAIN_BIN))
+
+dist: $(BINDIR)/$(SUBSDK) $(BINDIR)/$(IPS)
 	mkdir -p $(DISTDIR)
-	cp $< $(DISTDIR)/$(SUBSDK)
+	cp $(BINDIR)/$(SUBSDK) $(DISTDIR)/$(SUBSDK)
+	cp $(BINDIR)/$(IPS) $(DISTDIR)/$(IPS)
 
 $(OBJDIR) $(BINDIR):
 	mkdir -p $@
