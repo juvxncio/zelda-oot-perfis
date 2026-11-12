@@ -85,7 +85,7 @@ def byml(dados):
     def tabela(off):
         if not off:
             return []
-        n = struct.unpack_from(e + "I", dados, off)[0] & 0xFFFFFF
+        n = struct.unpack_from("<I", dados, off)[0] >> 8 if e == "<" else struct.unpack_from(">I", dados, off)[0] & 0xFFFFFF
         offs = struct.unpack_from(e + "%dI" % n, dados, off + 4)
         return [dados[off + x:dados.index(b"\0", off + x)].decode("utf-8") for x in offs]
 

@@ -112,3 +112,34 @@ automáticos.
 ## Ainda falta descobrir
 
 - Para que servem `slot_06` a `slot_11` (talvez o modo Master Quest). O mod redireciona os 12.
+
+## Menus do jogo (2026-11-12)
+
+Objetivo: pôr a escolha de perfil dentro de um menu do próprio jogo. Analisado com
+`tools/romfs.py` (romfs extraído em `Documents\zelda-romfs`, apagar no fim) e
+`tools/analisar_main.py refs/asm`.
+
+- Os layouts ficam em `UI/Layout2Archive/*.blarc.zs`, que são SARC de `.buil` com 4 cópias iguais
+  de cada arquivo. Os textos ficam em `Mals/USpt.Product.110.sarc.zs`, em `LayoutMsg/<layout>.msbt`.
+- **Tela inicial**, `Title_00.buil`:
+  - 4 vagas, `Pa_Button_00`..`03`, com os textos "Novo jogo", "Continuar" e "Opções".
+  - Classe `UITitleScreen`: vtable em `main+0x4bf06e8`, objeto de 0x2f0 bytes, fábrica em `main+0x34070e0`.
+  - A montagem do layout fica em `main+0x34067d0` (vt+0x2e8): cria um botão por vaga e guarda
+    a contagem em +712 e o array em +720.
+- **Tela de Opções**, `SystemOption_00.buil`:
+  - Classe `UISystemOptionScreen`, vtable em `main+0x4bef108`.
+  - `main+0x34011c0` (vt+0x2f0) cria as linhas e `main+0x3402960` (vt+0x2e8) monta o layout.
+  - Arrays por tipo: Toggle em +696/+704, Select em +712/+720, Level em +728/+736 e separadores
+    em +744/+752. A ordem das linhas fica em +824/+832, com entradas `{tipo, índice}`.
+- **A lista de Opções vem de dados**: `UI/OptionSetTable/OptionSetTable.game__ui__OptionSetTable.bgyml`,
+  dentro de `Pack/Bootup.Nin_Ounce_NVN2.pack.zs`.
+  - É um BYML `OptionSetArray` com 20 entradas. Cada uma tem `OptionType` (hash do nome do enum),
+    `ButtonType` (hash do tipo de botão), `ChoiceType` (lista com o hash de cada escolha) e,
+    opcionalmente, `CheckGameData` + `IsCheckDisplayGameData`, uma flag que decide se a linha aparece.
+  - A lista é lida por `main+0x339c5a0` (contagem de linhas visíveis) e `main+0x339c630` (linha i).
+    O objeto é `{int n; entrada *e}`, com entradas de 40 bytes: +4 é o tipo e +36 é o hash da
+    flag de visibilidade. Fica em `[[GOT main+0x4e7cfa8]]+1280`.
+  - O enum de opções tem 18 valores (`None` e mais 17 nomes), tabela em `main+0x3f137e0`. Não dá
+    pra criar um tipo novo só com dados: uma linha nova teria que reaproveitar um tipo existente,
+    e o código teria que tratar o texto e o valor dela.
+  - `VoiceLanguage` tem 9 escolhas, o mesmo número de perfis.
