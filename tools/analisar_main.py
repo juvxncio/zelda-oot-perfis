@@ -81,8 +81,9 @@ def cmd_imports(entrada, filtro=None):
     raw = ler_nso(entrada)
     img, segs, _, _ = achatar(raw)
     ro = segs[1][1]
-    dynstr_off, dynstr_tam = struct.unpack_from("<2I", raw, 0x88)
-    dynsym_off, dynsym_tam = struct.unpack_from("<2I", raw, 0x90)
+    # Cabeçalho NSO: 0x88 embedded, 0x90 dynstr, 0x98 dynsym (offset, tamanho), relativos ao .rodata
+    dynstr_off, dynstr_tam = struct.unpack_from("<2I", raw, 0x90)
+    dynsym_off, dynsym_tam = struct.unpack_from("<2I", raw, 0x98)
     dynstr = img[ro + dynstr_off:ro + dynstr_off + dynstr_tam]
     rx = re.compile(filtro) if filtro else None
     vistos = 0
