@@ -11,6 +11,42 @@ static const uint32_t pontos[] = {
 #undef GANCHO
 };
 
+static const uint32_t originais[] = {
+#define GANCHO(nome, offset, original) original,
+#include "ganchos.def"
+#undef GANCHO
+};
+
+/* As mesmas codificações de tools/mkips.py. */
+static uint32_t adrp_x16(uint32_t de, uint32_t para)
+{
+  int32_t pag = (int32_t)((para & ~0xFFFu) - (de & ~0xFFFu)) >> 12;
+  return 0x90000000u | ((uint32_t)pag & 3u) << 29 | (((uint32_t)pag >> 2) & 0x7FFFFu) << 5 | 16u;
+}
+
+/* O desvio i está inteiro como o mkips.py gerou? O emulador aplica patches próprios ao main
+ * (o Fritchii tem os "built-in": resolução, FPS, água) e um deles poderia cair na caverna. */
+static bool desvio_intacto(uintptr_t main_base, int i, uint32_t desvio)
+{
+  const uint32_t *d = (const uint32_t *)(main_base + desvio);
+  uint32_t slot = GANCHOS_SLOTS + (uint32_t)i * 8;
+  uint32_t esperado[6] = {
+    adrp_x16(desvio, slot),
+    0xF9400000u | ((slot & 0xFFFu) / 8) << 10 | 16u << 5 | 16u,   /* ldr x16, [x16, #lo] */
+    0xB4000000u | (2u << 5) | 16u,                                   /* cbz x16, +8 */
+    0xD61F0200u,                                                      /* br x16 */
+    originais[i],
+    0,
+  };
+  esperado[5] = 0x14000000u | ((uint32_t)((int32_t)(pontos[i] + 4 - (desvio + 20)) >> 2) & 0x3FFFFFFu);
+  if (!sys_mapped((uintptr_t)d, sizeof(esperado), SYS_PERM_R))
+    return false;
+  for (int k = 0; k < 6; k++)
+    if (d[k] != esperado[k])
+      return false;
+  return true;
+}
+
 _Static_assert(GANCHOS_DESVIOS + GANCHOS_TOTAL * GANCHOS_DESVIO_TAM <= GANCHOS_FIM,
                "a caverna nao comporta tantos ganchos");
 
@@ -59,11 +95,13 @@ int ganchos_iniciar(uintptr_t main_base)
   for (int i = 0; i < GANCHOS_TOTAL; i++) {
     uint32_t desvio = GANCHOS_DESVIOS + (uint32_t)i * GANCHOS_DESVIO_TAM;
     const uint32_t *ponto = (const uint32_t *)(main_base + pontos[i]);
-    ponto_ok[i] = sys_mapped((uintptr_t)ponto, 4, SYS_PERM_R) && *ponto == b_para(pontos[i], desvio);
+    bool no_ponto = sys_mapped((uintptr_t)ponto, 4, SYS_PERM_R) && *ponto == b_para(pontos[i], desvio);
+    bool intacto = desvio_intacto(main_base, i, desvio);
+    ponto_ok[i] = no_ponto && intacto;
     if (ponto_ok[i])
       ok++;
     else
-      log_gancho("ponto sem o desvio", i);
+      log_gancho(no_ponto ? "desvio alterado na caverna" : "ponto sem o desvio", i);
   }
   base = main_base;
   log_line_t l;
