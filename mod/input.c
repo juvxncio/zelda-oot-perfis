@@ -79,7 +79,7 @@ static void observar(int estilo, const void *out, int lidos, const uint32_t *id)
   if (completa && !estava) {
     log_line_t l;
     log_begin(&l);
-    log_str(&l, "input: combinacao do menu (ZL+ZR+baixo) no estilo ");
+    log_str(&l, "input: combinacao do menu (L+R+baixo) no estilo ");
     log_str(&l, nomes_estilo[estilo]);
     log_end(&l);
     if (combo_cb)

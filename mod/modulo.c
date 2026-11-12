@@ -8,7 +8,7 @@
 #include "input.h"
 #include "sys.h"
 
-#define VERSAO "0.3.2-input-teste"
+#define VERSAO "0.3.3-input-teste"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);
