@@ -14,8 +14,10 @@ enum {
   BTN_DLEFT = 1u << 12, BTN_DUP = 1u << 13, BTN_DRIGHT = 1u << 14, BTN_DDOWN = 1u << 15,
 };
 
-/* A combinação que abre o menu de perfis: L + R + direcional para baixo. */
-#define INPUT_COMBO_MENU (BTN_L | BTN_R | BTN_DDOWN)
+/* A combinação que abre o menu de perfis: ZL + ZR + direcional para baixo. Os gatilhos (e
+ * não L/R) porque no teclado do primeiro testador R/T são ZL/ZR; num controle de verdade
+ * continua difícil de apertar sem querer. */
+#define INPUT_COMBO_MENU (BTN_ZL | BTN_ZR | BTN_DDOWN)
 
 /* Chamada a cada vez que a combinação do menu é apertada (todas as teclas seguradas, e a
  * última acabou de descer). Roda na thread do jogo que leu o controle. */
