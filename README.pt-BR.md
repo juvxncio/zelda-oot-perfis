@@ -7,7 +7,9 @@ dentro do jogo**. O jogo só tem um save por usuário. O mod adiciona a linha **
 na tela de **Opções** do próprio jogo, com Perfil 1 a Perfil 9. Cada perfil é um jogo separado,
 com progresso, configurações e dados de conta próprios.
 
-![A linha Perfil de save nas Opções](docs/img/opcoes.png)
+| 1. Tela inicial → **Opções** | 2. Última linha: **Perfil de save** |
+|---|---|
+| ![Tela inicial com Opções em destaque](docs/img/tela-inicial.webp) | ![A linha Perfil de save nas Opções](docs/img/opcoes.webp) |
 
 - **Jogo:** `0400486024DEC000`, atualização v131072 (**1.1.1**). Em outra versão o mod não faz
   nada e o jogo roda normal.

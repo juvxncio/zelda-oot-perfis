@@ -7,9 +7,12 @@ the game**. The game has only one save per user. This mod adds a **"Save Profile
 game's own **Options** screen, with Profile 1 to Profile 9. Each profile is a separate game,
 with its own progress, settings and account data.
 
-![The Save Profile row in Options (game in Portuguese)](docs/img/opcoes.png)
+| 1. Title screen → **Options** | 2. Last row: **Save Profile** |
+|---|---|
+| ![Title screen with Options highlighted](docs/img/tela-inicial.webp) | ![The Save Profile row in Options](docs/img/opcoes.webp) |
 
-*The game shown in Portuguese; the row follows the game's language.*
+*Screenshots with the game in Portuguese. The row follows the game's language: in English it
+reads "Save Profile" and "Profile 1".*
 
 - **Game:** `0400486024DEC000`, update v131072 (**1.1.1**). On any other version the mod does
   nothing and the game runs as usual.
