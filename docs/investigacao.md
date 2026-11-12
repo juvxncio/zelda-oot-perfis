@@ -97,6 +97,18 @@ automáticos.
 - Resultado em `perfil2/`: `account.sav` (320 B), `option.sav` (42.100 B), `slot_00` a
   `slot_03` com `progress.sav` (~120 KB) e `caption.sav` (~40 KB).
 
+## Controle e tela (2026-11-12, módulos 0.3.x e 0.4.0, Fritchii 5.7 e 5.8.4)
+
+- **Controle:** os 5 `nn::hid::GetNpadStates` do main foram interceptados. O teclado do testador
+  chega como estilo `FullKey`, npad 0. O layout do estado (botões em `+0x08`) bate com o do
+  sloperina. Mapeamento observado: X → B (`0x2`), L (`0x40`), R (`0x80`), ZL (`0x100`),
+  ZR (`0x200`), baixo no direcional (`0x8000`). L+R+baixo (`0x80c0`) detectado.
+- **Tela:** `nvnBootstrapLoader` interceptado; swapchain de 3 texturas **2560x1440, formato 37
+  (RGBA8)**, área visível = textura inteira. Painel de 36x9 células na escala 3x (888x294 px,
+  1020 KiB) desenhado em 836,288, legível na tela inicial e em jogo, sem erros no log.
+- Funcionou também no **Fritchii 5.8.4** (`oot-gather-fix-4f5c53149b`), para onde o testador
+  atualizou.
+
 ## Ainda falta descobrir
 
 - Para que servem `slot_06` a `slot_11` (talvez o modo Master Quest). O mod redireciona os 12.
