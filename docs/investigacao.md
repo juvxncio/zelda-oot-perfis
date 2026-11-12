@@ -143,3 +143,31 @@ Objetivo: pôr a escolha de perfil dentro de um menu do próprio jogo. Analisado
     pra criar um tipo novo só com dados: uma linha nova teria que reaproveitar um tipo existente,
     e o código teria que tratar o texto e o valor dela.
   - `VoiceLanguage` tem 9 escolhas, o mesmo número de perfis.
+
+### A linha "Perfil de save" nas Opções (2026-11-12, 0.6.0 a 0.8.0)
+
+- **Ganchos em funções internas** (`mod/ganchos.*`, `tools/mkips.py`): um patch IPS32
+  (`exefs/<build id>.ips`) troca a primeira instrução de cada função por um desvio na caverna
+  `main+0x3c46c40..0x3c47000` (o fim do `.text`, zerado). O desvio salta para o ponteiro em
+  `main+0x4e9f000 + 8*i` (o fim do `.bss`; nenhum código do jogo acessa nada depois de
+  `main+0x4e9a4c8`) ou, enquanto o ponteiro é zero, executa a instrução original e volta.
+  O Fritchii aplica patches próprios ao main (Max Resolution, Dynamic FPS, Water ripples). Por isso
+  o módulo confere o marcador e cada desvio, instrução por instrução, antes de ligar o gancho.
+- **A lista de Opções**:
+  - `main+0x339c5a0` (conta as linhas visíveis), `main+0x339c630` (pega a i-ésima) e
+    `main+0x339c790` (pega por tipo) só são chamadas pela tela de Opções e pelos botões dela.
+  - A linha nova é uma cópia da de `VoiceLanguage` (9 escolhas, botão Select) com o tipo 9,
+    `MessageWindowTransparency`, e o hash `0x916ac217`.
+  - Esse tipo não é membro de `OptionData` (`0x834d9d9e`, 18 membros, conferido no
+    `GameDataList`), então nada é gravado no `option.sav`.
+- **O botão Select**: a escolha atual fica em +92 e o tipo da opção em +88. `main+0x33cf7f0`
+  atualiza o texto, ao montar o botão e a cada seta. É ali que o mod mostra o perfil escolhido
+  e grava a mudança.
+- **Os textos**:
+  - `main+0xa6afe0(saída, arquivo, rótulo, flag)` busca a mensagem de um layout e devolve 1 se
+    achou. A saída é `{char *texto, int32 tamanho, int64 -1}`.
+  - Os rótulos seguem o padrão `<Opção>_Title`, `<Opção>_Caption` e `<Opção>_%02d` (a escolha).
+  - Os textos são UTF-8, com o tamanho em bytes sem o zero final (formato 1, aprendido no jogo).
+- **Ao fechar o emulador**, aparece "Userspace PANIC" (resultado 0x1a80a). Isso só acontece
+  quando o emulador força a parada ("Force stopping EmuThread"). A pilha fica toda no sdk e não
+  passa pelo módulo nem pelas funções desviadas.
