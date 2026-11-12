@@ -37,6 +37,7 @@ typedef struct {
 
 void log_begin(log_line_t *l);
 void log_str(log_line_t *l, const char *s);
+void log_strn(log_line_t *l, const char *s, size_t max);   /* lê no máximo `max` bytes de s */
 void log_hex(log_line_t *l, uint64_t v);
 void log_dec(log_line_t *l, int64_t v);
 void log_end(log_line_t *l);

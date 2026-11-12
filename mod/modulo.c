@@ -4,6 +4,7 @@
  * escreve no log: nenhuma chamada ao sdk, que ainda não foi inicializado. */
 #include <stdint.h>
 
+#include "diag.h"
 #include "sys.h"
 
 #define VERSAO "0.1.0-diag"
@@ -45,4 +46,5 @@ __attribute__((used)) void modulo_init(void)
   log_str(&l, "main em ");
   log_hex(&l, modulo_main_base);
   log_end(&l);
+  diag_install(modulo_main_base);
 }

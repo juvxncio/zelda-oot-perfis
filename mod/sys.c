@@ -47,12 +47,19 @@ void log_begin(log_line_t *l)
   log_str(l, LOG_PREFIX);
 }
 
+void log_strn(log_line_t *l, const char *s, size_t max)
+{
+  if (!s) {
+    s = "(null)";
+    max = 6;
+  }
+  for (size_t i = 0; i < max && s[i] && l->len < sizeof(l->buf) - 1; i++)
+    l->buf[l->len++] = s[i];
+}
+
 void log_str(log_line_t *l, const char *s)
 {
-  if (!s)
-    s = "(null)";
-  while (*s && l->len < sizeof(l->buf) - 1)
-    l->buf[l->len++] = *s++;
+  log_strn(l, s, SIZE_MAX);
 }
 
 void log_hex(log_line_t *l, uint64_t v)
