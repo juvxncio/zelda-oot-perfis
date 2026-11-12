@@ -1,17 +1,19 @@
 # Instala ou remove o mod zelda-oot-perfis na pasta de mods do Fritchii.
 #
-# Instalar:  powershell -ExecutionPolicy Bypass -File tools\instalar-mod.ps1
+# Instalar:  powershell -ExecutionPolicy Bypass -File tools\instalar-mod.ps1 [-Diagnostico]
 # Remover:   powershell -ExecutionPolicy Bypass -File tools\instalar-mod.ps1 -Remover
 #
 # Ao instalar, na ordem: confere que o emulador esta fechado, faz o backup dos saves
-# (tools\backup-saves.ps1, para se falhar), guarda uma copia do qt-config.ini, liga as
-# mensagens de debug do jogo no log (Debug_Emulated:Debug) e copia o subsdk9 e o patch .ips.
+# (tools\backup-saves.ps1, para se falhar) e copia o subsdk9 e o patch .ips.
+# Com -Diagnostico: tambem guarda uma copia do qt-config.ini e liga no log do emulador as
+# mensagens do mod ([perfis] ...). Sem ele, o filtro de log fica (ou volta a ser) o do usuario.
 # Ao remover: apaga so a pasta deste mod e volta o filtro de log que estava antes.
 #
 # (Mensagens sem acento de proposito: o PowerShell 5.1 le scripts sem BOM como ANSI.)
 
 param(
     [switch]$Remover,
+    [switch]$Diagnostico,
     [string]$Dados = (Join-Path $env:APPDATA 'fritchii')
 )
 
@@ -21,7 +23,7 @@ $repo = Split-Path -Parent $PSScriptRoot
 $pastaMod = Join-Path $Dados 'load\0400486024DEC000\zelda-oot-perfis'
 $config = Join-Path $Dados 'config\qt-config.ini'
 $guardado = Join-Path $Dados 'config\qt-config.ini.antes-do-zelda-oot-perfis'
-$filtroDiag = '*:Info Debug_Emulated:Debug'
+$filtroDiag = '*:Info Debug.Emulated:Debug'
 
 # Fim de linha: [^\r\n]* em vez de .* para nao engolir o \r de arquivos CRLF.
 $reFiltro = '(?m)^log_filter=[^\r\n]*'
@@ -44,6 +46,21 @@ function Trocar-Linha($texto, $re, $linha) {
     return [regex]::Replace($texto, $re, [Text.RegularExpressions.MatchEvaluator] { param($m) $linha })
 }
 
+# Volta as duas linhas do filtro de log para as da copia guardada (se houver) e apaga a copia.
+function Restaurar-Filtro {
+    if (-not (Test-Path -LiteralPath $guardado)) { return }
+    $original = (Ler-Texto $guardado).Texto
+    $atual = Ler-Texto $config
+    $texto = $atual.Texto
+    $m = [regex]::Match($original, $reFiltro)
+    if ($m.Success) { $texto = Trocar-Linha $texto $reFiltro $m.Value }
+    $m = [regex]::Match($original, $rePadrao)
+    if ($m.Success) { $texto = Trocar-Linha $texto $rePadrao $m.Value }
+    Gravar-Texto $config $texto $atual.Bom
+    Remove-Item -LiteralPath $guardado
+    Write-Host 'Filtro de log restaurado para o que estava antes.'
+}
+
 $emulador = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^(lichii|eden)$' }
 if ($emulador) {
     Write-Host 'ERRO: feche o emulador antes de instalar ou remover o mod.' -ForegroundColor Red
@@ -61,18 +78,7 @@ if ($Remover) {
     } else {
         Write-Host 'O mod nao estava instalado.'
     }
-    if (Test-Path -LiteralPath $guardado) {
-        $original = (Ler-Texto $guardado).Texto
-        $atual = Ler-Texto $config
-        $texto = $atual.Texto
-        $m = [regex]::Match($original, $reFiltro)
-        if ($m.Success) { $texto = Trocar-Linha $texto $reFiltro $m.Value }
-        $m = [regex]::Match($original, $rePadrao)
-        if ($m.Success) { $texto = Trocar-Linha $texto $rePadrao $m.Value }
-        Gravar-Texto $config $texto $atual.Bom
-        Remove-Item -LiteralPath $guardado
-        Write-Host 'Filtro de log restaurado para o que estava antes.'
-    }
+    Restaurar-Filtro
     Write-Host 'OK: pronto.' -ForegroundColor Green
     exit 0
 }
@@ -90,18 +96,22 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$atual = Ler-Texto $config
-if (-not [regex]::IsMatch($atual.Texto, $reFiltro)) {
-    Write-Host 'ERRO: nao achei a linha log_filter= no qt-config.ini; nada foi alterado.' -ForegroundColor Red
-    exit 1
+if ($Diagnostico) {
+    $atual = Ler-Texto $config
+    if (-not [regex]::IsMatch($atual.Texto, $reFiltro)) {
+        Write-Host 'ERRO: nao achei a linha log_filter= no qt-config.ini; nada foi alterado.' -ForegroundColor Red
+        exit 1
+    }
+    if (-not (Test-Path -LiteralPath $guardado)) {
+        Copy-Item -LiteralPath $config -Destination $guardado
+    }
+    $texto = Trocar-Linha $atual.Texto $rePadrao 'log_filter\default=false'
+    $texto = Trocar-Linha $texto $reFiltro ('log_filter="' + $filtroDiag + '"')
+    Gravar-Texto $config $texto $atual.Bom
+    Write-Host "Filtro de log: $filtroDiag (copia do original em $guardado)"
+} else {
+    Restaurar-Filtro
 }
-if (-not (Test-Path -LiteralPath $guardado)) {
-    Copy-Item -LiteralPath $config -Destination $guardado
-}
-$texto = Trocar-Linha $atual.Texto $rePadrao 'log_filter\default=false'
-$texto = Trocar-Linha $texto $reFiltro ('log_filter="' + $filtroDiag + '"')
-Gravar-Texto $config $texto $atual.Bom
-Write-Host "Filtro de log: $filtroDiag (copia do original em $guardado)"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $pastaMod 'exefs') | Out-Null
 Copy-Item -LiteralPath $subsdk -Destination (Join-Path $pastaMod 'exefs\subsdk9') -Force
