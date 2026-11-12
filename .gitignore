@@ -1,0 +1,33 @@
+# Arquivos do jogo: nunca entram no repositório (código e dados da Nintendo).
+*.nup
+*.nsp
+*.xci
+*.nca
+work/
+dump/
+main.bin
+**/exefs/
+**/romfs/
+
+# Saves e backups: ficam só no seu PC.
+*.sav
+saves/
+backup*/
+
+# Saídas de build.
+build/
+bin/
+dist/
+*.o
+*.elf
+*.nso
+*.ips
+
+# Ferramentas de terceiros clonadas localmente.
+third_party/
+
+# Python e editores.
+__pycache__/
+*.pyc
+.venv/
+.vscode/
