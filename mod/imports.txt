@@ -12,4 +12,6 @@ _ZN2nn2fs7UnmountEPKc
 _ZN2nn2fs8MountRomEPKc
 _ZN2nn2fs8MountRomEPKcPvm
 _ZN2nn2fs8OpenFileEPNS0_10FileHandleEPKci
+_ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm
+_ZN2nn2fs9CloseFileENS0_10FileHandleE
 nnMain

@@ -7,7 +7,7 @@
 #include "diag.h"
 #include "sys.h"
 
-#define VERSAO "0.1.0-diag"
+#define VERSAO "0.2.0-perfis-teste"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);
