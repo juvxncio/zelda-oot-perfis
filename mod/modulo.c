@@ -89,5 +89,5 @@ __attribute__((used)) void modulo_init(void)
   diag_install(modulo_main_base);
   /* Independentes dos perfis: se o controle ou a tela falharem, os perfis seguem funcionando. */
   tela_install(modulo_main_base);
-  input_install(modulo_main_base, alternar_painel_teste);
+  input_install(modulo_main_base, alternar_painel_teste, 0);
 }

@@ -18,12 +18,23 @@ enum {
  * ZL + ZR + baixo foi testada antes, veja o histórico). */
 #define INPUT_COMBO_MENU (BTN_L | BTN_R | BTN_DDOWN)
 
+/* Direções do analógico esquerdo como botões (bits do NpadButton). */
+#define BTN_LS_UP   (1u << 17)
+#define BTN_LS_DOWN (1u << 19)
+
 /* Chamada a cada vez que a combinação do menu é apertada (todas as teclas seguradas, e a
  * última acabou de descer). Roda na thread do jogo que leu o controle. */
 typedef void (*input_combo_fn)(void);
+/* Chamada com os botões que acabaram de descer (fora a combinação), enquanto o jogo estiver
+ * bloqueado. Mesma thread. */
+typedef void (*input_botoes_fn)(uint32_t apertados);
 
-/* Aponta as 5 variantes de nn::hid::GetNpadStates do main para os nossos substitutos, que
- * chamam a original e só leem o resultado. Devolve quantas foram interceptadas. */
-int input_install(uintptr_t main_base, input_combo_fn on_combo);
+/* Aponta as 5 variantes de nn::hid::GetNpadStates do main para os nossos substitutos.
+ * Devolve quantas foram interceptadas. */
+int input_install(uintptr_t main_base, input_combo_fn on_combo, input_botoes_fn on_botoes);
+
+/* Enquanto bloqueado, o jogo não vê nenhum botão nem analógico. Ao desbloquear, continua sem
+ * ver nada até todos os botões serem soltos (o A que confirmou não chega ao jogo). */
+void input_bloquear_jogo(bool bloquear);
 
 #endif
