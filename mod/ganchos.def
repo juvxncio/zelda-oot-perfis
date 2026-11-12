@@ -10,6 +10,9 @@
 /* UISystemOptionScreen, vt+0x2f0: cria as linhas da tela de Opções (this, heap). */
 GANCHO(OPCOES_CRIAR, 0x34011c0, 0xd503237f)
 
+/* UISystemOptionScreen, destrutor (vt+0x0; o de vt+0x8 chama este e libera): a tela fechou. */
+GANCHO(OPCOES_DESTRUIR, 0x34010e0, 0xd503237f)
+
 /* A lista lida de OptionSetTable.bgyml ({int n; entrada[40] *e}). Só a tela de Opções e os
  * botões dela chamam estas três (conferido com analisar_main.py). */
 GANCHO(LISTA_CONTA, 0x339c5a0, 0xd503237f)      /* (lista) -> quantas linhas visíveis */

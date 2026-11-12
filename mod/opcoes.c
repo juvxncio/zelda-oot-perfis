@@ -3,8 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <stddef.h>
+
 #include "diag.h"
 #include "ganchos.h"
+#include "input.h"
 #include "perfis.h"
 #include "sys.h"
 
@@ -31,7 +34,17 @@ typedef uint64_t (*fn8)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64
 #define ARGS8 uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7
 #define REPASSA(f) (f)(a0, a1, a2, a3, a4, a5, a6, a7)
 
-static fn8 criar_original, conta_original, pega_original, por_tipo_original, texto_original;
+static fn8 criar_original, destruir_original, conta_original, pega_original, por_tipo_original,
+    texto_original;
+
+/* Reinício automático (só antes de algum jogo ser carregado): a escolha mudou para um perfil
+ * diferente do que está em uso; quando a tela de Opções fecha e o jogo para de mexer em
+ * arquivos, o jogo é reiniciado pelo sistema e abre já no perfil novo. */
+#define REINICIO_ESPERA_MS 1000u
+void oe_restart_program(const void *param, size_t tamanho) __asm__("_ZN2nn2oe14RestartProgramEPKvm");
+static bool reinicio_pendente;
+static uint64_t tela_fechada_ms;   /* 0: a tela de Opções está aberta (ou nunca fechou) */
+static int reinicio_tentado;
 
 static uint64_t lista;                         /* a lista que recebeu a linha */
 static _Alignas(8) uint8_t entrada[ENTRADA_TAM];
@@ -121,19 +134,67 @@ static uint64_t texto(ARGS8)
       int32_t e = (int32_t)le32(b + SELECT_ESCOLHA);
       if (e >= 0 && e < PERFIS_MAX && e != escolha_atual) {
         escolha_atual = e;
-        if (diag_gravar_perfil(e + 1))
+        if (diag_gravar_perfil(e + 1)) {
           log_escolha("escolhido e gravado:", e);
-        else
+          bool antes = __atomic_load_n(&reinicio_pendente, __ATOMIC_ACQUIRE);
+          bool agora = !diag_jogo_carregado() && e + 1 != diag_perfil_em_uso();
+          __atomic_store_n(&reinicio_pendente, agora, __ATOMIC_RELEASE);
+          if (agora != antes)
+            log_raw(agora ? "opcoes: o jogo reinicia ao fechar as Opcoes"
+                          : "opcoes: sem reinicio (perfil em uso, ou jogo carregado)");
+        } else {
           log_escolha("FALHOU ao gravar", e);
+        }
       }
     }
   }
   return REPASSA(texto_original);
 }
 
+static uint64_t destruir(ARGS8)
+{
+  uint64_t r = REPASSA(destruir_original);
+  if (__atomic_load_n(&reinicio_pendente, __ATOMIC_ACQUIRE)) {
+    uint64_t t = sys_agora_ms();
+    __atomic_store_n(&tela_fechada_ms, t ? t : 1, __ATOMIC_RELEASE);
+    log_raw("opcoes: tela fechada; reinicio em seguida");
+  }
+  return r;
+}
+
+/* A cada leitura do controle: reinicia quando for seguro. */
+static void verificar_reinicio(void)
+{
+  if (!__atomic_load_n(&reinicio_pendente, __ATOMIC_ACQUIRE))
+    return;
+  uint64_t fechada = __atomic_load_n(&tela_fechada_ms, __ATOMIC_ACQUIRE);
+  if (!fechada || sys_agora_ms() - fechada < REINICIO_ESPERA_MS ||
+      diag_ms_desde_atividade() < REINICIO_ESPERA_MS)
+    return;
+  /* (uma thread só passa daqui) */
+  if (!__atomic_exchange_n(&reinicio_pendente, false, __ATOMIC_ACQ_REL))
+    return;
+  int n = diag_perfil_escolhido();
+  if (diag_jogo_carregado() || n == diag_perfil_em_uso() || reinicio_tentado) {
+    log_raw("opcoes: reinicio cancelado (nada a trocar, ou ja tentado)");
+    return;
+  }
+  reinicio_tentado = 1;
+  log_line_t l;
+  log_begin(&l);
+  log_str(&l, "opcoes: reiniciando o jogo no Perfil ");
+  log_dec(&l, n);
+  log_end(&l);
+  static const char param[8] = "perfis";
+  oe_restart_program(param, sizeof(param));
+  /* Só volta se o sistema (emulador) não reiniciar: a escolha continua valendo ao reabrir. */
+  log_raw("opcoes: RestartProgram voltou sem reiniciar; a troca vale ao reabrir o jogo");
+}
+
 static uint64_t criar(ARGS8)
 {
   botao_atual = 0;
+  __atomic_store_n(&tela_fechada_ms, 0, __ATOMIC_RELEASE);
   uint64_t r = REPASSA(criar_original);
   log_line_t l;
   log_begin(&l);
@@ -161,4 +222,14 @@ void opcoes_install(void)
     return;
   }
   criar_original = (fn8)gancho_ligar(GANCHO_OPCOES_CRIAR, (void *)criar);
+  destruir_original = (fn8)gancho_ligar(GANCHO_OPCOES_DESTRUIR, (void *)destruir);
+  if (destruir_original)
+    input_ao_ler(verificar_reinicio);
+  else
+    log_raw("opcoes: sem o gancho de fechar a tela; a troca vale ao reabrir o jogo");
+}
+
+bool opcoes_reinicia_ao_sair(void)
+{
+  return destruir_original && !diag_jogo_carregado();
 }

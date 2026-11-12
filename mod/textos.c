@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "ganchos.h"
+#include "opcoes.h"
 #include "sys.h"
 
 /* Saída da busca (inicializada pelo jogo em main+0xa66f70): +0 texto, +8 tamanho (int32),
@@ -77,7 +78,7 @@ static uint64_t pegar(ARGS8)
   const char *rotulo = 0;
   if (a2 && sys_mapped(a2, 8, SYS_PERM_R))
     rotulo = *(const char *const *)a2;
-  const char *nosso = (rotulo && sys_mapped((uintptr_t)rotulo, 1, SYS_PERM_R)) ? textos_para_rotulo(rotulo) : 0;
+  const char *nosso = (rotulo && sys_mapped((uintptr_t)rotulo, 1, SYS_PERM_R)) ? textos_para_rotulo(rotulo, opcoes_reinicia_ao_sair()) : 0;
   if (!nosso) {
     uint64_t r = pegar_original(a0, a1, a2, a3, a4, a5, a6, a7);
     if ((r & 0xFF) && formato == TEXTOS_FORMATO_DESCONHECIDO)

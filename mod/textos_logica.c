@@ -26,7 +26,7 @@ static bool igual(const char *a, const char *b)
   return *a == *b;
 }
 
-const char *textos_para_rotulo(const char *rotulo)
+const char *textos_para_rotulo(const char *rotulo, bool reinicia)
 {
   if (!rotulo || !comeca(rotulo, PREFIXO))
     return 0;
@@ -34,8 +34,10 @@ const char *textos_para_rotulo(const char *rotulo)
   if (igual(s, "Title"))
     return "Perfil de save";
   if (igual(s, "Caption"))
-    return "Escolhe qual save o jogo vai usar.\n"
-           "A troca vale quando o jogo for aberto de novo.";
+    return reinicia ? "Escolhe qual save o jogo vai usar.\n"
+                      "Ao sair das Opções, o jogo reinicia nele."
+                    : "Escolhe qual save o jogo vai usar.\n"
+                      "Vale quando o jogo for aberto de novo.";
   if (s[0] == '0' && s[1] >= '0' && s[1] <= '8' && s[2] == 0)
     return escolhas[s[1] - '0'];
   return 0;

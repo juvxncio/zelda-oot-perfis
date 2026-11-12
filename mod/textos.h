@@ -10,8 +10,10 @@
 void textos_install(void);
 
 /* Lógica pura (testada no PC). O texto do mod para um rótulo de "MessageWindowTransparency_*",
- * em UTF-8, ou 0 se o rótulo não é nosso. */
-const char *textos_para_rotulo(const char *rotulo);
+ * em UTF-8, ou 0 se o rótulo não é nosso. `reinicia`: se mudar o perfil agora reinicia o jogo
+ * ao fechar as Opções (muda só a legenda). */
+#include <stdbool.h>
+const char *textos_para_rotulo(const char *rotulo, bool reinicia);
 
 /* Como o jogo representa o tamanho do texto, aprendido de uma busca bem-sucedida. */
 typedef enum {

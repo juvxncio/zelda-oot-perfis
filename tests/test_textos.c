@@ -20,26 +20,29 @@ static int falhas, total;
 int main(void)
 {
   /* Rótulos */
-  CHECA(textos_para_rotulo("MessageWindowTransparency_Title") &&
-        strcmp(textos_para_rotulo("MessageWindowTransparency_Title"), "Perfil de save") == 0, "titulo");
-  CHECA(textos_para_rotulo("MessageWindowTransparency_Caption") != 0, "legenda");
+  CHECA(textos_para_rotulo("MessageWindowTransparency_Title", true) &&
+        strcmp(textos_para_rotulo("MessageWindowTransparency_Title", true), "Perfil de save") == 0, "titulo");
+  CHECA(textos_para_rotulo("MessageWindowTransparency_Caption", true) != 0, "legenda");
+  CHECA(strstr(textos_para_rotulo("MessageWindowTransparency_Caption", true), "reinicia") != 0, "legenda com reinicio");
+  CHECA(strstr(textos_para_rotulo("MessageWindowTransparency_Caption", false), "aberto de novo") != 0, "legenda sem reinicio");
+  CHECA(strcmp(textos_para_rotulo("MessageWindowTransparency_03", false), "Perfil 4") == 0, "escolha nao depende do reinicio");
   for (int i = 0; i < 9; i++) {
     char r[64], esperado[16];
     snprintf(r, sizeof r, "MessageWindowTransparency_%02d", i);
     snprintf(esperado, sizeof esperado, "Perfil %d", i + 1);
-    const char *t = textos_para_rotulo(r);
+    const char *t = textos_para_rotulo(r, true);
     CHECA(t && strcmp(t, esperado) == 0, "%s -> %s", r, t ? t : "(nada)");
   }
-  CHECA(!textos_para_rotulo("MessageWindowTransparency_09"), "09 nao existe");
-  CHECA(!textos_para_rotulo("MessageWindowTransparency_0"), "0 sozinho");
-  CHECA(!textos_para_rotulo("MessageWindowTransparency_000"), "000");
-  CHECA(!textos_para_rotulo("MessageWindowTransparency_"), "so o prefixo");
-  CHECA(!textos_para_rotulo("MessageWindowTransparency"), "sem _");
-  CHECA(!textos_para_rotulo("VoiceLanguage_Title"), "rotulo do jogo");
-  CHECA(!textos_para_rotulo("ControllerRumble_00"), "escolha do jogo");
-  CHECA(!textos_para_rotulo(""), "vazio");
-  CHECA(!textos_para_rotulo(0), "nulo");
-  CHECA(!textos_para_rotulo("MessageWindowTransparency_TitleX"), "titulo com sobra");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency_09", true), "09 nao existe");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency_0", true), "0 sozinho");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency_000", true), "000");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency_", true), "so o prefixo");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency", true), "sem _");
+  CHECA(!textos_para_rotulo("VoiceLanguage_Title", true), "rotulo do jogo");
+  CHECA(!textos_para_rotulo("ControllerRumble_00", true), "escolha do jogo");
+  CHECA(!textos_para_rotulo("", true), "vazio");
+  CHECA(!textos_para_rotulo(0, true), "nulo");
+  CHECA(!textos_para_rotulo("MessageWindowTransparency_TitleX", true), "titulo com sobra");
 
   /* Formato: UTF-8 */
   const char *u8 = "Idioma das vozes";
