@@ -48,8 +48,12 @@ result_t fs_read_dir(int64_t *count, dir_entry_t *, uint64_t handle, int64_t max
 result_t fs_create_dir(const char *)                           FS("_ZN2nn2fs15CreateDirectoryEPKc");
 result_t fs_delete_dir_rec(const char *)                       FS("_ZN2nn2fs26DeleteDirectoryRecursivelyEPKc");
 result_t fs_commit(const char *)                               FS("_ZN2nn2fs6CommitEPKc");
-/* usadas só pelo mod, para ler o arquivo de controle (não interceptadas) */
+/* usadas só pelo mod, para ler e gravar o arquivo de controle (não interceptadas) */
+typedef struct { int32_t flags; } write_option_t;   /* nn::fs::WriteOption; 1 = Flush */
+#define WRITE_FLUSH 1
 result_t fs_read_file(uint64_t *read, uint64_t handle, int64_t offset, void *buf, size_t size) FS("_ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm");
+result_t fs_write_file(uint64_t handle, int64_t offset, const void *buf, size_t size, const write_option_t *opt) FS("_ZN2nn2fs9WriteFileENS0_10FileHandleElPKvmRKNS0_11WriteOptionE");
+result_t fs_set_file_size(uint64_t handle, int64_t size)       FS("_ZN2nn2fs11SetFileSizeENS0_10FileHandleEl");
 void     fs_close_file(uint64_t handle)                        FS("_ZN2nn2fs9CloseFileENS0_10FileHandleE");
 
 /* o que cada substituto chama (preenchido por got_hook) */
@@ -269,6 +273,93 @@ static void carregar_perfil(void)
   log_end(&l);
 }
 
+/* --- para o menu ------------------------------------------------------------------- */
+
+#define MODO_ESCRITA 6   /* Write | AllowAppend */
+#define TIPO_ARQUIVO 1
+#define SLOTS_DO_JOGO 12 /* o jogo procura slot_00 a slot_11 */
+
+static bool save_montado;
+
+bool diag_perfis_ligados(void)
+{
+  return perfis_habilitados && __atomic_load_n(&save_montado, __ATOMIC_ACQUIRE);
+}
+
+int diag_perfil_em_uso(void)
+{
+  return perfil();
+}
+
+int diag_perfil_escolhido(void)
+{
+  return diag_perfis_ligados() ? ler_perfil_do_arquivo() : 1;
+}
+
+bool diag_perfil_tem_save(int n)
+{
+  if (!diag_perfis_ligados() || n < 1 || n > PERFIS_MAX)
+    return false;
+  char original[] = "save:/slot_00/caption.sav";
+  char buf[PERFIS_CAMINHO_MAX];
+  for (int s = 0; s < SLOTS_DO_JOGO; s++) {
+    original[11] = (char)('0' + s / 10);
+    original[12] = (char)('0' + s % 10);
+    const char *caminho = original;
+    perfis_acao_t a = perfis_reescrever(n, false, original, buf, sizeof(buf));
+    if (a == PERFIS_BLOQUEAR)
+      return false;
+    if (a == PERFIS_REESCRITO)
+      caminho = buf;
+    int tipo = -1;
+    if (next_entry_type(&tipo, caminho) == 0 && tipo == TIPO_ARQUIVO)
+      return true;
+  }
+  return false;
+}
+
+/* Grava só o dígito. O Commit também confirma escritas pendentes do jogo naquele instante;
+ * o menu é para a tela inicial, onde o jogo não está salvando. */
+bool diag_gravar_perfil(int n)
+{
+  if (!diag_perfis_ligados() || n < 1 || n > PERFIS_MAX)
+    return false;
+  int tipo = -1;
+  result_t r = next_entry_type(&tipo, PERFIS_ARQUIVO);
+  if (r != 0)
+    r = next_create_file(PERFIS_ARQUIVO, 1);
+  else if (tipo != TIPO_ARQUIVO)
+    r = RESULT_PATH_NOT_FOUND;   /* existe algo com esse nome que não é arquivo: não mexe */
+  uint64_t handle = 0;
+  result_t aberto = r == 0 ? next_open_file(&handle, PERFIS_ARQUIVO, MODO_ESCRITA) : r;
+  result_t tamanho = 0, escrito = 0, commit = 0;
+  if (aberto == 0) {
+    char digito = (char)('0' + n);
+    write_option_t opt = { WRITE_FLUSH };
+    tamanho = fs_set_file_size(handle, 1);
+    escrito = fs_write_file(handle, 0, &digito, 1, &opt);
+    fs_close_file(handle);
+    commit = next_commit(PERFIS_MONTAGEM);
+  }
+  bool ok = aberto == 0 && tamanho == 0 && escrito == 0 && commit == 0;
+  log_line_t l;
+  log_begin(&l);
+  log_str(&l, ok ? "menu: perfil escolhido gravado: " : "menu: FALHA ao gravar o perfil ");
+  log_dec(&l, n);
+  if (!ok) {
+    log_str(&l, " open=");
+    log_hex(&l, aberto);
+    log_str(&l, " size=");
+    log_hex(&l, tamanho);
+    log_str(&l, " write=");
+    log_hex(&l, escrito);
+    log_str(&l, " commit=");
+    log_hex(&l, commit);
+  }
+  log_end(&l);
+  return ok;
+}
+
 /* --- substitutos ------------------------------------------------------------------- */
 
 static result_t hook_mount_rom_cache(const char *name, void *cache, size_t size)
@@ -302,8 +393,10 @@ static result_t hook_mount_save(const char *name, const void *uid)
     log_hex(&l, u ? u[1] : 0);
     log_fim_result(&l, r);
   }
-  if (r == 0 && same_string(name, PERFIS_MONTAGEM))
+  if (r == 0 && same_string(name, PERFIS_MONTAGEM)) {
     carregar_perfil();
+    __atomic_store_n(&save_montado, true, __ATOMIC_RELEASE);
+  }
   return r;
 }
 
@@ -316,6 +409,8 @@ static result_t hook_mount_temp(const char *name)
 
 static void hook_unmount(const char *name)
 {
+  if (same_string(name, PERFIS_MONTAGEM))
+    __atomic_store_n(&save_montado, false, __ATOMIC_RELEASE);
   next_unmount(name);
   log_op("Unmount", name, name, 0);
 }
