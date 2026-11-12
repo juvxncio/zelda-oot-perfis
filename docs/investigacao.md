@@ -15,7 +15,7 @@ comunidade ([oot-remake-modding](https://github.com/Kabosune/oot-remake-modding)
 └── slot_05\  caption.sav + progress.sav
 ```
 
-- O id do usuário atual é `35092526F2729A1E6560A99581586E25`.
+- O id do usuário atual é `<id do usuário>`.
 - `slot_00` a `slot_05`: um save manual e cinco automáticos que se revezam, segundo
   relatos. No PC, o `slot_00` tem data antiga e os slots 01 a 05 mudam juntos.
 - Todos os `.sav` começam com o cabeçalho `04 03 02 01 EB 80 2D 00`.
@@ -66,7 +66,7 @@ O módulo carregou, interceptou as 14 funções e o jogo rodou normalmente. Sequ
 | Tempo | Chamada | Observação |
 |---|---|---|
 | 71,7 | `MountRom content` | romfs do jogo montado como `content:` |
-| 76,0 | `MountSaveData save uid=...` | **save montado como `save:`**, usuário `35092526F2729A1E6560A99581586E25` |
+| 76,0 | `MountSaveData save uid=...` | **save montado como `save:`**, usuário `<id do usuário>` |
 | 76,1 | `MountTemporaryStorage savt` | armazenamento temporário (`savt:`) |
 | 80,4–81,5 | `OpenFile save:/slot_NN/caption.sav` (leitura) | **lê `slot_00` a `slot_11`**: 12 slots; 06 a 11 dão `0x202` (não existe) |
 | 81,5–81,6 | `OpenFile save:/account.sav`, `save:/option.sav` (leitura) | |
