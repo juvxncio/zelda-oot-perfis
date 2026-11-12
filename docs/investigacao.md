@@ -39,11 +39,29 @@ O `main` do jogo chama as funções de arquivo do SDK (`nn::fs::OpenFile`, `Crea
 (`src/ootgz/got.c`). Interceptando essas funções, o mod troca o caminho do save sem precisar
 entender a lógica de save do jogo.
 
+## Análise do `main` (2026-11-12)
+
+Extraído do `.nup` com `tools/extrair-exefs.ps1` e analisado com `tools/analisar_main.py`.
+
+- Build ID `E0F3CCFAF50065AE4EA01EB5AEB13B1A45DA3348`: o mesmo da comunidade, então os
+  endereços de `oot-remake-modding` valem.
+- Segmentos: text `0x0..0x3c461d0`, ro `0x3c47000..0x484c080`, data `0x484d000..0x4d46b80`,
+  bss até `0x4ea0000`.
+- O `main` importa 1183 símbolos. Os de arquivo que o mod precisa interceptar (todos pela GOT):
+  `nn::fs::MountSaveData(const char*, const nn::account::Uid&)`, `OpenFile`, `CreateFile`,
+  `DeleteFile`, `GetEntryType`, `OpenDirectory`, `ReadDirectory`, `CreateDirectory`,
+  `DeleteDirectoryRecursively`, `Commit`, `Unmount`. Também `nn::account::GetUserId` e
+  `TryOpenPreselectedUser`.
+- **Os nomes `slot_`, `progress.sav`, `caption.sav`, `option.sav` e `account.sav` não estão no
+  executável**, nem em ASCII nem em UTF-16. Só aparece `TemporaryGame.sav` (`main+0x3cb4e4b`).
+  Os nomes devem vir dos dados (provavelmente a tabela `GameData/GameDataList` do romfs).
+- Há um formato `%s:/%s` em `main+0x3d4e167`, provavelmente para montar
+  "ponto de montagem + caminho".
+
 ## Ainda falta descobrir
 
-- O nome exato do ponto de montagem e dos caminhos (ex.: `save:/slot_00/progress.sav`).
-  Precisa extrair o `main` do `.nup` e procurar as strings.
-- Quais funções `nn::fs` o jogo usa para o save: abrir, criar, apagar, renomear, listar
-  pastas e `CommitSaveData`.
-- Se o jogo lê o `slot_NN` mais recente olhando datas ou um índice interno
-  (`QueryGetLatestSaveIndex`).
+- O formato exato dos caminhos em tempo de execução (ex.: `save:/slot_00/progress.sav`).
+  Como os nomes não estão no código, o caminho mais simples é um módulo de diagnóstico que só
+  registra no log cada caminho passado para as funções `nn::fs`, sem alterar nada.
+- Se o jogo acha o `slot_NN` mais recente listando a pasta (`OpenDirectory`/`ReadDirectory`)
+  ou por um índice interno (`QueryGetLatestSaveIndex`). O log do diagnóstico responde isso.
