@@ -95,7 +95,9 @@ def byml(dados):
     def valor(tipo, raw, at):
         if tipo == 0xA0:
             return t[raw]
-        if tipo in (0xC0, 0xC1, 0xC2, 0x21):
+        if tipo in (0xC0, 0xC1, 0x20, 0x21):
+            if raw >= len(dados):
+                return "<offset %08x fora>" % raw
             return no(raw)
         if tipo == 0xD0:
             return bool(raw)
@@ -117,12 +119,12 @@ def byml(dados):
 
     def no(off):
         tipo = dados[off]
-        n = struct.unpack_from(e + "I", dados, off)[0] >> 8 if e == ">" else struct.unpack_from("<I", dados, off)[0] >> 8
+        n = struct.unpack_from(">I", dados, off)[0] & 0xFFFFFF if e == ">" else struct.unpack_from("<I", dados, off)[0] >> 8
         if tipo == 0xC1:
             r = {}
             for i in range(n):
                 p = off + 4 + i * 8
-                ki = struct.unpack_from(e + "I", dados, p)[0] & 0xFFFFFF
+                ki = struct.unpack_from(">I", dados, p)[0] >> 8 if e == ">" else struct.unpack_from("<I", dados, p)[0] & 0xFFFFFF
                 ti = dados[p + 3]
                 raw, = struct.unpack_from(e + "I", dados, p + 4)
                 r[k[ki]] = valor(ti, raw, p + 4)
@@ -132,12 +134,19 @@ def byml(dados):
             base = off + 4 + ((n + 3) & ~3)
             return [valor(tipos[i], struct.unpack_from(e + "I", dados, base + i * 4)[0], base + i * 4)
                     for i in range(n)]
-        if tipo == 0x21:   # mapa por hash (v7)
+        if tipo in (0x20, 0x21):   # mapas por hash (v7): 0x20 com hash de 32 bits, 0x21 de 64
+            larg = 8 if tipo == 0x20 else 12
+            tipos = dados[off + 4 + n * larg:off + 4 + n * larg + n]
             r = {}
             for i in range(n):
-                p = off + 4 + i * 8
-                h, raw = struct.unpack_from(e + "II", dados, p)
-                r["%08x" % h] = raw
+                p = off + 4 + i * larg
+                if tipo == 0x20:
+                    h, raw = struct.unpack_from(e + "II", dados, p)
+                    chave = "%08x" % h
+                else:
+                    h, raw = struct.unpack_from(e + "QI", dados, p)
+                    chave = "%016x" % h
+                r[chave] = valor(tipos[i], raw, p + larg - 4)
             return r
         return "<no %02x>" % tipo
 
