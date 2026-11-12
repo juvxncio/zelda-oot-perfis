@@ -12,7 +12,7 @@
 #include "sys.h"
 #include "tela.h"
 
-#define VERSAO "0.6.0-ganchos-teste"
+#define VERSAO "0.7.0-opcoes-teste"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);

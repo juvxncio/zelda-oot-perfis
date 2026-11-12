@@ -9,3 +9,12 @@
 
 /* UISystemOptionScreen, vt+0x2f0: cria as linhas da tela de Opções (this, heap). */
 GANCHO(OPCOES_CRIAR, 0x34011c0, 0xd503237f)
+
+/* A lista lida de OptionSetTable.bgyml ({int n; entrada[40] *e}). Só a tela de Opções e os
+ * botões dela chamam estas três (conferido com analisar_main.py). */
+GANCHO(LISTA_CONTA, 0x339c5a0, 0xd503237f)      /* (lista) -> quantas linhas visíveis */
+GANCHO(LISTA_PEGA, 0x339c630, 0xd503237f)       /* (lista, i) -> i-ésima linha visível */
+GANCHO(LISTA_POR_TIPO, 0x339c790, 0xb9400008)   /* (lista, tipo de opção) -> a linha */
+
+/* Botão de escolha (Select) da tela de Opções: atualiza o texto da escolha atual (this). */
+GANCHO(SELECT_TEXTO, 0x33cf7f0, 0xd503237f)
