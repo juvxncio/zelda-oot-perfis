@@ -5,12 +5,17 @@
     python -I tools/analisar_main.py imports  <NSO descomprimido> [filtro]
     python -I tools/analisar_main.py exports  <NSO descomprimido> [filtro]
     python -I tools/analisar_main.py textos   <main.bin> <regex> [--contexto N]
+    python -I tools/analisar_main.py refs     <main.bin> <offset> [<offset> ...]
+    python -I tools/analisar_main.py asm      <main.bin> <offset> <instrucoes> [--llvm-mc <exe>]
 
 achatar  monta a imagem como fica na memória (byte N = offset N do módulo) e confere o build ID.
 imports  lista os símbolos que o NSO importa (ex.: as funções nn::fs), com o nome desmanglado
          de forma simples. O filtro é uma regex sobre o nome mangled.
 exports  lista os símbolos que o NSO define e exporta (ex.: o que o sdk oferece), com o offset.
 textos   procura strings ASCII terminadas em zero que casem com a regex e mostra o offset.
+refs     acha no código os pares ADRP+ADD/LDR que apontam para os offsets dados (ex.: quem usa
+         uma string), procurando o início provável da função (o STP/SUB SP mais próximo antes).
+asm      desmonta instruções a partir de um offset com o llvm-mc do LLVM (padrão: no PATH).
 
 Nada é escrito fora do arquivo de saída do `achatar`. O NSO de entrada só é lido.
 """
@@ -173,6 +178,89 @@ def cmd_textos(entrada, padrao, contexto=0):
     print("(%d textos)" % achados)
 
 
+TEXTO_FIM = 0x3C461D0   # fim do .text deste build (docs/investigacao.md)
+
+
+def _int(t):
+    t = t.lower().replace("main+", "")
+    v = int(t, 0)
+    return v - BASE if v >= BASE else v
+
+
+def inicio_funcao(ins, i, limite=4096):
+    """Índice provável do início da função que contém a instrução i: o primeiro
+    'STP X29, X30' / 'SUB SP, SP' / 'PACIBSP' visto voltando, depois de um RET/B."""
+    for j in range(i, max(0, i - limite), -1):
+        w = ins[j]
+        if w == 0xD65F03C0 or (w & 0xFC000000) == 0x14000000:   # RET ou B incondicional antes
+            if j < i:
+                return j + 1
+    return None
+
+
+def cmd_refs(entrada, alvos):
+    img = open(entrada, "rb").read()
+    n = min(len(img), TEXTO_FIM) // 4
+    ins = struct.unpack_from("<%dI" % n, img, 0)
+    alvos = set(alvos)
+    paginas = {a & ~0xFFF for a in alvos}
+    achados = 0
+    for i in range(n):
+        w = ins[i]
+        if (w & 0x9F000000) != 0x90000000:
+            continue
+        imm = ((w >> 29) & 3) | (((w >> 5) & 0x7FFFF) << 2)
+        if imm & (1 << 20):
+            imm -= 1 << 21
+        pagina = ((i * 4) & ~0xFFF) + (imm << 12)
+        if pagina not in paginas:
+            continue
+        rd = w & 31
+        for j in range(i + 1, min(n, i + 24)):
+            v = ins[j]
+            rn = (v >> 5) & 31
+            alvo = None
+            if (v & 0xFF800000) == 0x91000000 and rn == rd:          # ADD Xd, Xn, #imm
+                alvo = pagina + ((v >> 10) & 0xFFF)
+            elif (v & 0xFFC00000) == 0xF9400000 and rn == rd:        # LDR Xt, [Xn, #imm]
+                alvo = pagina + ((v >> 10) & 0xFFF) * 8
+            if alvo is not None:
+                if alvo in alvos:
+                    f = inicio_funcao(ins, i)
+                    achados += 1
+                    print("main+%#x usa main+%#x   (função em main+%s)" % (
+                        j * 4, alvo, "%#x" % (f * 4) if f is not None else "?"))
+                break
+    print("(%d referências)" % achados)
+
+
+def cmd_asm(entrada, ini, qtd, llvm_mc="llvm-mc"):
+    import subprocess
+    img = open(entrada, "rb").read()
+    dados = img[ini:ini + qtd * 4]
+    hexa = " ".join("0x%02x" % b for b in dados)
+    r = subprocess.run([llvm_mc, "--disassemble", "-triple=aarch64", "-mattr=+v8.5a,+crc,+crypto"],
+                       input=hexa, capture_output=True, text=True)
+    linhas = [l.strip() for l in r.stdout.splitlines() if l.strip() and not l.strip().startswith(".")]
+    for k, l in enumerate(linhas):
+        pc = ini + k * 4
+        w = struct.unpack_from("<I", img, pc)[0]
+        extra = ""
+        if (w & 0x9F000000) == 0x90000000:   # ADRP: mostra a página como offset
+            imm = ((w >> 29) & 3) | (((w >> 5) & 0x7FFFF) << 2)
+            if imm & (1 << 20):
+                imm -= 1 << 21
+            extra = "   ; página main+%#x" % ((pc & ~0xFFF) + (imm << 12))
+        elif (w & 0xFC000000) in (0x94000000, 0x14000000):   # BL / B
+            imm = w & 0x3FFFFFF
+            if imm & (1 << 25):
+                imm -= 1 << 26
+            extra = "   ; -> main+%#x" % (pc + imm * 4)
+        print("main+%#09x  %08x  %s%s" % (pc, w, l, extra))
+    if r.stderr.strip():
+        print(r.stderr.strip()[:2000], file=sys.stderr)
+
+
 def main():
     a = sys.argv[1:]
     if len(a) == 3 and a[0] == "achatar":
@@ -182,6 +270,11 @@ def main():
     elif len(a) >= 3 and a[0] == "textos":
         ctx = int(a[a.index("--contexto") + 1]) if "--contexto" in a else 0
         cmd_textos(a[1], a[2], ctx)
+    elif len(a) >= 3 and a[0] == "refs":
+        cmd_refs(a[1], [_int(x) for x in a[2:]])
+    elif len(a) >= 4 and a[0] == "asm":
+        mc = a[a.index("--llvm-mc") + 1] if "--llvm-mc" in a else "llvm-mc"
+        cmd_asm(a[1], _int(a[2]), int(a[3], 0), mc)
     else:
         sys.exit(__doc__)
 
