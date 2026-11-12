@@ -81,8 +81,22 @@ O módulo carregou, interceptou as 14 funções e o jogo rodou normalmente. Sequ
   `caption.sav`**, então redirecionar os caminhos basta para cada perfil ter o seu.
 - Antes de gravar, o jogo testa se a pasta do slot existe (`GetEntryType save:/slot_05`).
 
+## Primeiro teste de perfil novo (2026-11-12, módulo 0.2.0-perfis-teste)
+
+Perfil 2 escolhido com `tools/escolher-perfil.ps1 -Perfil 2`; jogo novo até 4 salvamentos
+automáticos.
+
+- **Perfil 1 intacto:** os 14 arquivos do save original conferidos por SHA-256 antes e
+  depois, 0 diferenças, nenhum arquivo novo fora de `perfil2/` (além de `perfil_ativo.txt`).
+- `save:/perfil2` criado ao montar o save (`CreateDirectory -> 0x0`, tipo pasta).
+- 82 linhas no log, **0 bloqueios**, todo caminho em `save:` redirecionado.
+- Save novo, como o jogo faz: `OpenFile` de `account.sav`/`option.sav` dá `0x202`, então
+  `GetEntryType` + `CreateFile` (tamanho 0) para cada um; para cada slot,
+  `GetEntryType save:/slot_NN` → `CreateDirectory` → `CreateFile` de `progress.sav` e
+  `caption.sav` → `OpenFile` modo 6 → `Commit`.
+- Resultado em `perfil2/`: `account.sav` (320 B), `option.sav` (42.100 B), `slot_00` a
+  `slot_03` com `progress.sav` (~120 KB) e `caption.sav` (~40 KB).
+
 ## Ainda falta descobrir
 
-- O que o jogo faz quando a pasta `slot_NN` não existe (save totalmente novo): deve criar com
-  `CreateDirectory` + `CreateFile`. Confirmar no primeiro teste de um perfil novo.
 - Para que servem `slot_06` a `slot_11` (talvez o modo Master Quest). O mod redireciona os 12.
