@@ -5,12 +5,14 @@
 #include <stdint.h>
 
 #include "diag.h"
+#include "ganchos.h"
 #include "input.h"
 #include "menu_jogo.h"
+#include "opcoes.h"
 #include "sys.h"
 #include "tela.h"
 
-#define VERSAO "0.5.0-menu-teste"
+#define VERSAO "0.6.0-ganchos-teste"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);
@@ -54,4 +56,7 @@ __attribute__((used)) void modulo_init(void)
    * (e continuam escolhíveis por tools/escolher-perfil.ps1). */
   tela_install(modulo_main_base);
   input_install(modulo_main_base, menu_jogo_combo, menu_jogo_botoes);
+  /* Ganchos em funções internas: precisam do patch IPS do exefs. Sem ele, nada muda. */
+  if (ganchos_iniciar(modulo_main_base) > 0)
+    opcoes_install();
 }
