@@ -105,6 +105,15 @@ make test HOSTCC=cc               # runs the pure-logic tests on the PC
 powershell -File tools\empacotar.ps1   # makes the release zips
 ```
 
+## Support the project
+
+If you enjoyed this mod and want to say thanks, you can buy me a coffee on
+**[Ko-fi](https://ko-fi.com/juvxncio)**. It is completely optional: the mod is and will stay
+free.
+
+From Brazil, you can also use PIX, with the random key
+`e13ef68b-2589-40fb-94c4-56fce7e0d37c`.
+
 ## Credits and licenses
 
 - Code: GPL-3.0 (`LICENSE`). Parts are adapted from

@@ -106,6 +106,12 @@ powershell -File tools\empacotar.ps1     # gera os zips de distribuição
 Para desenvolver, `tools/instalar-mod.ps1` instala direto do `dist/`, com backup dos saves
 antes, e `-Diagnostico` liga as mensagens do mod no log do emulador.
 
+## Apoie o projeto
+
+Se você curtiu o mod e quiser agradecer, pode me pagar um café pelo
+**[Ko-fi](https://ko-fi.com/juvxncio)** ou por PIX, com a chave aleatória
+`e13ef68b-2589-40fb-94c4-56fce7e0d37c`. É totalmente opcional: o mod é e vai continuar grátis.
+
 ## Créditos e licenças
 
 - Código sob GPL-3.0 (`LICENSE`). Partes adaptadas do

@@ -61,6 +61,10 @@ INSTALAR
 Faca backup do seu save antes de usar qualquer mod.
 
 License: GPL-3.0 (LICENSE.txt). Source code: $nome-source.zip, distributed with this file.
+
+Enjoyed it? Optional tip / Gostou? Apoio opcional:
+  Ko-fi: https://ko-fi.com/juvxncio
+  PIX (chave aleatoria): e13ef68b-2589-40fb-94c4-56fce7e0d37c
 "@
     [IO.File]::WriteAllText((Join-Path $pasta 'README.txt'), $leia.Replace("`r`n", "`n").Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 
