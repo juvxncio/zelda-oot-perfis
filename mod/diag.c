@@ -280,6 +280,40 @@ static void carregar_perfil(void)
 #define SLOTS_DO_JOGO 12 /* o jogo procura slot_00 a slot_11 */
 
 static bool save_montado;
+static bool jogo_carregado;          /* o jogo já abriu algum progress.sav */
+static uint64_t ultima_atividade_ms; /* último acesso do jogo a arquivo (fora do romfs) */
+
+/* Anota um acesso do jogo: quando foi e se é o progresso de um jogo (Continuar, ou o
+ * salvamento de um jogo novo). */
+static void anotar_acesso(const char *path)
+{
+  __atomic_store_n(&ultima_atividade_ms, sys_agora_ms(), __ATOMIC_RELEASE);
+  if (!path)
+    return;
+  static const char alvo[] = "/progress.sav";
+  for (const char *p = path; *p; p++) {
+    const char *a = alvo, *q = p;
+    while (*a && *q == *a)
+      a++, q++;
+    if (!*a && !*q) {
+      if (!__atomic_exchange_n(&jogo_carregado, true, __ATOMIC_ACQ_REL))
+        log_raw("jogo carregado (progress.sav acessado): reinicio automatico desligado");
+      return;
+    }
+  }
+}
+
+bool diag_jogo_carregado(void)
+{
+  return __atomic_load_n(&jogo_carregado, __ATOMIC_ACQUIRE);
+}
+
+uint64_t diag_ms_desde_atividade(void)
+{
+  uint64_t u = __atomic_load_n(&ultima_atividade_ms, __ATOMIC_ACQUIRE);
+  uint64_t agora = sys_agora_ms();
+  return agora > u ? agora - u : 0;
+}
 
 bool diag_perfis_ligados(void)
 {
@@ -422,6 +456,8 @@ static result_t hook_open_file(uint64_t *handle, const char *path, int mode)
   if (!caminho_a_usar(path, buf, &usado))
     return bloquear("OpenFile", path);
   result_t r = next_open_file(handle, usado, mode);
+  if (!is_rom_path(path))
+    anotar_acesso(path);
   if (!is_rom_path(path) && log_allowed()) {
     log_line_t l;
     log_inicio_op(&l, "OpenFile", path, usado);
@@ -439,6 +475,8 @@ static result_t hook_create_file(const char *path, int64_t size)
   if (!caminho_a_usar(path, buf, &usado))
     return bloquear("CreateFile", path);
   result_t r = next_create_file(usado, size);
+  if (!is_rom_path(path))
+    anotar_acesso(path);
   if (!is_rom_path(path) && log_allowed()) {
     log_line_t l;
     log_inicio_op(&l, "CreateFile", path, usado);
@@ -550,6 +588,7 @@ static result_t hook_delete_dir_rec(const char *path)
 static result_t hook_commit(const char *mount)
 {
   result_t r = next_commit(mount);
+  anotar_acesso(0);
   log_op("Commit", mount, mount, r);
   return r;
 }

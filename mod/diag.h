@@ -19,4 +19,10 @@ bool diag_perfil_tem_save(int n);
 /* Grava n em perfil_ativo.txt e faz Commit do save. Vale na próxima vez que o jogo abrir. */
 bool diag_gravar_perfil(int n);
 
+/* True depois que o jogo abriu algum progress.sav (Continuar, ou o salvamento de um jogo
+ * novo): daí em diante reiniciar perderia progresso. */
+bool diag_jogo_carregado(void);
+/* Milissegundos desde o último acesso do jogo a arquivo (abrir, criar, Commit). */
+uint64_t diag_ms_desde_atividade(void);
+
 #endif
