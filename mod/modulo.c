@@ -64,12 +64,15 @@ static void alternar_painel_teste(void)
   static const uint8_t cores[] = { TELA_TITULO, TELA_NORMAL, TELA_NORMAL, TELA_SELECIONADA,
                                    TELA_NORMAL, TELA_APAGADA, TELA_AVISO, TELA_NORMAL,
                                    TELA_APAGADA };
+  _Static_assert(sizeof(linhas) / sizeof(*linhas) == sizeof(cores), "uma cor por linha");
+  enum { N = sizeof(cores) };
+  _Static_assert(N <= TELA_LINHAS, "o painel tem linhas para o teste");
   tela_conteudo_t c;
   for (int i = 0; i < TELA_LINHAS; i++) {
-    copiar(c.texto[i], linhas[i]);
-    c.cor[i] = cores[i];
+    copiar(c.texto[i], i < N ? linhas[i] : "");
+    c.cor[i] = i < N ? cores[i] : TELA_NORMAL;
   }
-  c.linhas = TELA_LINHAS;
+  c.linhas = N;
   tela_mostrar(&c);
 }
 

@@ -2,7 +2,7 @@
 #
 #   make          compila build/subsdk9
 #   make dist     monta dist/load/0400486024DEC000/zelda-oot-perfis/exefs/subsdk9
-#   make test     compila e roda no PC os testes da lógica de perfis (HOSTCC=...)
+#   make test     compila e roda no PC os testes da lógica de perfis e do menu (HOSTCC=...)
 #   make clean
 #
 # Precisa do devkitA64 (devkitPro, opção "Switch Development"). Rode pelo terminal
@@ -69,8 +69,11 @@ $(OBJDIR) $(BINDIR):
 HOSTCC      ?= cc
 $(BINDIR)/test_perfis.exe: tests/test_perfis.c $(SRCDIR)/perfis.c $(SRCDIR)/perfis.h | $(BINDIR)
 	$(HOSTCC) -std=gnu11 -O2 -Wall -Wextra -Werror -o $@ tests/test_perfis.c $(SRCDIR)/perfis.c
-test: $(BINDIR)/test_perfis.exe
-	$<
+$(BINDIR)/test_menu.exe: tests/test_menu.c $(SRCDIR)/menu.c $(SRCDIR)/menu.h $(SRCDIR)/tela.h $(SRCDIR)/input.h | $(BINDIR)
+	$(HOSTCC) -std=gnu11 -O2 -Wall -Wextra -Werror -o $@ tests/test_menu.c $(SRCDIR)/menu.c
+test: $(BINDIR)/test_perfis.exe $(BINDIR)/test_menu.exe
+	$(BINDIR)/test_perfis.exe
+	$(BINDIR)/test_menu.exe
 
 clean:
 	rm -rf build dist

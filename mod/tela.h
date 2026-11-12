@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #define TELA_COLUNAS 36
-#define TELA_LINHAS  9
+#define TELA_LINHAS  13   /* título, linha vazia, 9 perfis, linha vazia, ajuda */
 
 enum { TELA_NORMAL, TELA_SELECIONADA, TELA_TITULO, TELA_APAGADA, TELA_AVISO, TELA_CORES };
 
