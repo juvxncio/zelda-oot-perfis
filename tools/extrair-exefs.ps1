@@ -17,16 +17,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 foreach ($p in $Nup, $Python, (Join-Path $Hookshot 'nx2\nup.py'), (Join-Path $Llvm 'clang.exe')) {
-    if (-not (Test-Path $p)) { Write-Host "ERRO: nao encontrado: $p" -ForegroundColor Red; exit 1 }
+    if (-not (Test-Path -LiteralPath $p)) { Write-Host "ERRO: nao encontrado: $p" -ForegroundColor Red; exit 1 }
 }
 
 $env:Path = "$Llvm;$env:Path"
-$antes = (Get-Item $Nup).LastWriteTimeUtc.Ticks, (Get-Item $Nup).Length
+$antes = (Get-Item -LiteralPath $Nup).LastWriteTimeUtc.Ticks, (Get-Item -LiteralPath $Nup).Length
 
 & $Python -I (Join-Path $Hookshot 'nx2\nup.py') $Nup --extract $Saida --only exefs
 $codigo = $LASTEXITCODE
 
-$depois = (Get-Item $Nup).LastWriteTimeUtc.Ticks, (Get-Item $Nup).Length
+$depois = (Get-Item -LiteralPath $Nup).LastWriteTimeUtc.Ticks, (Get-Item -LiteralPath $Nup).Length
 if (($antes -join ',') -ne ($depois -join ',')) {
     Write-Host 'ALERTA: o .nup mudou de data ou tamanho!' -ForegroundColor Red
     exit 1
@@ -35,4 +35,4 @@ Write-Host 'OK: .nup inalterado (data e tamanho conferidos).' -ForegroundColor G
 
 if ($codigo -ne 0) { Write-Host "ERRO: nup.py terminou com codigo $codigo" -ForegroundColor Red; exit $codigo }
 
-Get-ChildItem $Saida -Recurse -File | Select-Object FullName, Length | Format-Table -AutoSize
+Get-ChildItem -LiteralPath $Saida -Recurse -File | Select-Object FullName, Length | Format-Table -AutoSize
