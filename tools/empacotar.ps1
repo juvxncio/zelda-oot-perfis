@@ -10,6 +10,7 @@
 # (Mensagens sem acento de proposito: o PowerShell 5.1 le scripts sem BOM como ANSI.)
 
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $repo = Split-Path -Parent $PSScriptRoot
@@ -64,7 +65,17 @@ License: GPL-3.0 (LICENSE.txt). Source code: $nome-source.zip, distributed with 
     [IO.File]::WriteAllText((Join-Path $pasta 'README.txt'), $leia.Replace("`r`n", "`n").Replace("`n", "`r`n"), [Text.UTF8Encoding]::new($false))
 
     foreach ($z in $zipMod, $zipFonte) { if (Test-Path -LiteralPath $z) { Remove-Item -LiteralPath $z } }
-    [IO.Compression.ZipFile]::CreateFromDirectory($tmp, $zipMod, [IO.Compression.CompressionLevel]::Optimal, $false)
+    # Entrada por entrada, com '/' nos nomes: o CreateFromDirectory do .NET Framework grava '\',
+    # que alguns descompactadores nao tratam como pasta.
+    $zip = [IO.Compression.ZipFile]::Open($zipMod, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        Get-ChildItem -LiteralPath $tmp -Recurse -File | Sort-Object FullName | ForEach-Object {
+            $rel = $_.FullName.Substring($tmp.Length + 1).Replace('\', '/')
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $rel, [IO.Compression.CompressionLevel]::Optimal)
+        }
+    } finally {
+        $zip.Dispose()
+    }
 } finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force
 }
