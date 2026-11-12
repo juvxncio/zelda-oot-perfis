@@ -14,6 +14,7 @@ typedef struct {
 } npad_state_t;
 
 #define NPAD_ATTR_CONNECTED 1u
+#define INPUT_MAX_MUDANCAS_LOG 300
 
 /* As variantes públicas, na ordem dos substitutos abaixo. */
 #define PUBLIC(style) "_ZN2nn3hid13GetNpadStatesEPNS0_" style "EiRKj"
@@ -55,6 +56,20 @@ static void observar(int estilo, const void *out, int lidos, const uint32_t *id)
     log_str(&l, " (npad ");
     log_hex(&l, id ? *id : 0xFFFFFFFFu);
     log_str(&l, "): botoes=");
+    log_hex(&l, agora);
+    log_end(&l);
+  }
+
+  /* Diagnóstico: cada mudança de botões, para ver o que o teclado/controle de cada pessoa manda
+   * (bits 16-19: analógico esquerdo como direções; 20-23: o direito). Limitado. */
+  static uint32_t mudancas;
+  if (agora != antes && mudancas < INPUT_MAX_MUDANCAS_LOG) {
+    mudancas++;
+    log_line_t l;
+    log_begin(&l);
+    log_str(&l, "input: ");
+    log_str(&l, nomes_estilo[estilo]);
+    log_str(&l, " botoes=");
     log_hex(&l, agora);
     log_end(&l);
   }
