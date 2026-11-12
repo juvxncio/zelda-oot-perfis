@@ -12,6 +12,7 @@
 #include "got.h"
 #include "perfis.h"
 #include "sys.h"
+#include "textos.h"
 
 typedef uint32_t result_t;   /* nn::Result: um uint32, devolvido em w0 */
 
@@ -458,6 +459,8 @@ static result_t hook_open_file(uint64_t *handle, const char *path, int mode)
   result_t r = next_open_file(handle, usado, mode);
   if (!is_rom_path(path))
     anotar_acesso(path);
+  else if (r == 0)
+    textos_arquivo_aberto(path);   /* o idioma vem do Mals/<XXyy> que o jogo abre */
   if (!is_rom_path(path) && log_allowed()) {
     log_line_t l;
     log_inicio_op(&l, "OpenFile", path, usado);

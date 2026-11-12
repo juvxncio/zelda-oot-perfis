@@ -15,7 +15,50 @@ static fn8 pegar_original;
 static volatile int formato;   /* textos_formato_t, aprendido das buscas do próprio jogo */
 static int avisos;
 
-#define TEXTOS_MAX 12           /* Title, Caption e 00..08 */
+/* O idioma do jogo: o do Mals/<XXyy> que ele abriu; senão, o do sistema (nn::oe). */
+static volatile int idioma = TEXTOS_IDIOMA_NENHUM;
+uint64_t oe_get_desired_language(void) __asm__("_ZN2nn2oe18GetDesiredLanguageEv");
+
+static void log_idioma(const char *de_onde_veio, int i)
+{
+  log_line_t l;
+  log_begin(&l);
+  log_str(&l, "textos: idioma ");
+  log_dec(&l, i);
+  log_str(&l, de_onde_veio);
+  log_end(&l);
+}
+
+void textos_arquivo_aberto(const char *caminho)
+{
+  if (idioma != TEXTOS_IDIOMA_NENHUM)
+    return;
+  textos_idioma_t i = textos_idioma_de_caminho(caminho);
+  if (i != TEXTOS_IDIOMA_NENHUM) {
+    idioma = i;
+    log_idioma(" (pelo arquivo de textos que o jogo abriu)", i);
+  }
+}
+
+static textos_idioma_t idioma_atual(void)
+{
+  int i = idioma;
+  if (i != TEXTOS_IDIOMA_NENHUM)
+    return (textos_idioma_t)i;
+  uint64_t c = oe_get_desired_language();   /* nn::settings::LanguageCode: 8 bytes de texto */
+  char s[9];
+  for (int k = 0; k < 8; k++)
+    s[k] = (char)(c >> (8 * k));
+  s[8] = 0;
+  i = textos_idioma_de_codigo(s);
+  if (i == TEXTOS_IDIOMA_NENHUM)
+    i = TEXTOS_EN;
+  idioma = i;
+  log_idioma(" (pelo idioma do sistema)", i);
+  return (textos_idioma_t)i;
+}
+
+#define TEXTOS_MAX 16           /* Title, as 2 legendas e 00..08 (o idioma não muda) */
 #define TEXTO_CAP  128
 static uint16_t em_utf16[TEXTOS_MAX][TEXTO_CAP];
 static const char *de_onde[TEXTOS_MAX];
@@ -78,7 +121,7 @@ static uint64_t pegar(ARGS8)
   const char *rotulo = 0;
   if (a2 && sys_mapped(a2, 8, SYS_PERM_R))
     rotulo = *(const char *const *)a2;
-  const char *nosso = (rotulo && sys_mapped((uintptr_t)rotulo, 1, SYS_PERM_R)) ? textos_para_rotulo(rotulo, opcoes_reinicia_ao_sair()) : 0;
+  const char *nosso = (rotulo && sys_mapped((uintptr_t)rotulo, 1, SYS_PERM_R)) ? textos_para_rotulo(rotulo, opcoes_reinicia_ao_sair(), idioma_atual()) : 0;
   if (!nosso) {
     uint64_t r = pegar_original(a0, a1, a2, a3, a4, a5, a6, a7);
     if ((r & 0xFF) && formato == TEXTOS_FORMATO_DESCONHECIDO)
