@@ -19,25 +19,27 @@ if ($emulador) {
     exit 1
 }
 
-if (-not (Test-Path $Origem)) {
+if (-not (Test-Path -LiteralPath $Origem)) {
     Write-Host "ERRO: pasta de saves nao encontrada: $Origem" -ForegroundColor Red
     exit 1
 }
 
 $alvo = Join-Path $Destino ('saves_' + (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'))
-if (Test-Path $alvo) {
+if (Test-Path -LiteralPath $alvo) {
     Write-Host "ERRO: $alvo ja existe; nada foi alterado." -ForegroundColor Red
     exit 1
 }
 
 New-Item -ItemType Directory -Path $alvo -Force | Out-Null
-Copy-Item -Path (Join-Path $Origem '*') -Destination $alvo -Recurse
+Get-ChildItem -LiteralPath $Origem -Force | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $alvo -Recurse
+}
 
-$arquivos = Get-ChildItem $Origem -Recurse -File -Force
+$arquivos = Get-ChildItem -LiteralPath $Origem -Recurse -File -Force
 $diferentes = 0
 foreach ($f in $arquivos) {
     $copia = Join-Path $alvo $f.FullName.Substring($Origem.Length).TrimStart('\')
-    if (-not (Test-Path $copia) -or (Get-FileHash $f.FullName).Hash -ne (Get-FileHash $copia).Hash) {
+    if (-not (Test-Path -LiteralPath $copia) -or (Get-FileHash -LiteralPath $f.FullName).Hash -ne (Get-FileHash -LiteralPath $copia).Hash) {
         Write-Host "DIFERENTE: $($f.FullName)" -ForegroundColor Red
         $diferentes++
     }
