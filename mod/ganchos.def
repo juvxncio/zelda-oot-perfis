@@ -18,3 +18,7 @@ GANCHO(LISTA_POR_TIPO, 0x339c790, 0xb9400008)   /* (lista, tipo de opção) -> a
 
 /* Botão de escolha (Select) da tela de Opções: atualiza o texto da escolha atual (this). */
 GANCHO(SELECT_TEXTO, 0x33cf7f0, 0xd503237f)
+
+/* Busca de mensagem dos layouts: (saída {texto, tamanho, ...}, arquivo, rótulo, flag) -> 1 se
+ * achou. É por onde "MessageWindowTransparency_Title" etc. viram "MsgNotFound". */
+GANCHO(MSG_PEGAR, 0xa6afe0, 0xd503237f)

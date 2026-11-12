@@ -75,15 +75,18 @@ dist: $(BINDIR)/$(SUBSDK) $(BINDIR)/$(IPS)
 $(OBJDIR) $(BINDIR):
 	mkdir -p $@
 
-# Testes no PC: só a lógica pura (mod/perfis.c), sem nada do Switch.
+# Testes no PC: só a lógica pura (perfis, menu, textos), sem nada do Switch.
 HOSTCC      ?= cc
 $(BINDIR)/test_perfis.exe: tests/test_perfis.c $(SRCDIR)/perfis.c $(SRCDIR)/perfis.h | $(BINDIR)
 	$(HOSTCC) -std=gnu11 -O2 -Wall -Wextra -Werror -o $@ tests/test_perfis.c $(SRCDIR)/perfis.c
 $(BINDIR)/test_menu.exe: tests/test_menu.c $(SRCDIR)/menu.c $(SRCDIR)/menu.h $(SRCDIR)/tela.h $(SRCDIR)/input.h | $(BINDIR)
 	$(HOSTCC) -std=gnu11 -O2 -Wall -Wextra -Werror -o $@ tests/test_menu.c $(SRCDIR)/menu.c
-test: $(BINDIR)/test_perfis.exe $(BINDIR)/test_menu.exe
+$(BINDIR)/test_textos.exe: tests/test_textos.c $(SRCDIR)/textos_logica.c $(SRCDIR)/textos.h | $(BINDIR)
+	$(HOSTCC) -std=gnu11 -O2 -Wall -Wextra -Werror -o $@ tests/test_textos.c $(SRCDIR)/textos_logica.c
+test: $(BINDIR)/test_perfis.exe $(BINDIR)/test_menu.exe $(BINDIR)/test_textos.exe
 	$(BINDIR)/test_perfis.exe
 	$(BINDIR)/test_menu.exe
+	$(BINDIR)/test_textos.exe
 
 clean:
 	rm -rf build dist

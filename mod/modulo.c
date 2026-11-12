@@ -11,8 +11,9 @@
 #include "opcoes.h"
 #include "sys.h"
 #include "tela.h"
+#include "textos.h"
 
-#define VERSAO "0.7.0-opcoes-teste"
+#define VERSAO "0.8.0-textos-teste"
 
 /* Exportado pelo main do jogo; o rtld resolve este import. */
 extern void nnMain(void);
@@ -57,6 +58,8 @@ __attribute__((used)) void modulo_init(void)
   tela_install(modulo_main_base);
   input_install(modulo_main_base, menu_jogo_combo, menu_jogo_botoes);
   /* Ganchos em funções internas: precisam do patch IPS do exefs. Sem ele, nada muda. */
-  if (ganchos_iniciar(modulo_main_base) > 0)
+  if (ganchos_iniciar(modulo_main_base) > 0) {
+    textos_install();
     opcoes_install();
+  }
 }
