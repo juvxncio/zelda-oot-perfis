@@ -61,6 +61,16 @@ Um idioma desconhecido mostra o texto em inglês.
 - O perfil fica gravado como um dígito em `perfil_ativo.txt`, no save do jogo. Dá para editar à
   mão, com o emulador fechado.
 
+## Limitações conhecidas
+
+- Só a versão **1.1.1** do jogo é suportada. O patch é preso a esse build, e em outra versão o
+  mod fica desligado.
+- Não funciona junto com outros mods que também trazem um módulo `exefs/subsdk9`, como os
+  baseados no sloperina: o emulador carrega só um `subsdk9`. Mods que só mudam texturas,
+  modelos ou textos (`romfs`) funcionam junto.
+- Ao fechar o jogo, o log do emulador pode mostrar um "Userspace PANIC". Isso também acontece
+  quando o emulador força a parada do jogo, e os saves já estão gravados nessa hora.
+
 ## Como funciona
 
 - **`subsdk9`** é um módulo de código que o jogo carrega sozinho (como no

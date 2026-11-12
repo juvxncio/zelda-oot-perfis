@@ -62,6 +62,16 @@ written by a native speaker; the others are translations, and corrections are we
 - The profile is stored as a single digit in `perfil_ativo.txt` in the game's save data, so it
   can also be edited by hand with the emulator closed.
 
+## Known limitations
+
+- Only game version **1.1.1** is supported. The patch is tied to that build, and on any other
+  version the mod stays off.
+- It cannot be combined with other mods that also ship an `exefs/subsdk9` module, such as
+  sloperina-based mods: the emulator loads only one `subsdk9`. Mods that only change textures,
+  models or text (`romfs`) are fine.
+- When the emulator closes the game, its log may show a "Userspace PANIC". This also happens
+  when the emulator force-stops the game, and the saves are already written by then.
+
 ## How it works
 
 - **`subsdk9`** is a code module the game loads by itself (the same approach as
